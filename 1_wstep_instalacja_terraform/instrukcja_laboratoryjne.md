@@ -1,4 +1,5 @@
-# Instrukcja Laboratoryjna: Podstawy Terraform i konfiguracja środowiska roboczego
+# Instrukcja Laboratoryjna: 1. Wstęp do Terraform, przygotowanie wstępnego środowiska do zabaw z instalacją Terraform, oraz utworzenie konta w chmurze AWS
+
 
 ## Krok 1: Przygotowanie systemu Windows 11 i menedżera pakietów Winget
 1. Sprawdź w systemie Windows, czy winget działa prawidłowo, uruchamiając wiersz poleceń z uprawnieniami administratora i wpisując polecenie: `winget search chrome`.
