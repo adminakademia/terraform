@@ -4,7 +4,7 @@
 
 
 
-## Cel zajęć
+## Cel lekcji
 Celem tej lekcji jest zapoznanie się z koncepcją "Infrastructure as Code" (Infrastruktura jako kod) za pomocą narzędzia Terraform (oraz opcjonalnie OpenTofu). Przygotowane zostanie własne stanowisko pracy, konfigurując system Windows 11 oraz Debian 13, instalując niezbędne oprogramowanie (Visual Studio Code, Terraform) oraz nawiązując połączenie zdalne za pomocą protokołu SSH. Końcowym etapem będzie utworzenie darmowego konta chmurowego AWS (Free-Tier).
 
 ## Wymagania wstępne
