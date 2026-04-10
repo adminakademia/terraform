@@ -1,0 +1,2 @@
+aws_access_key = "OEDFWEOFWEONFD"
+aws_secret_key = "2894762398462394872364782436"
