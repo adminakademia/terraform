@@ -1,0 +1,34 @@
+#cloud-config
+# UWAGA: pierwsza linia "#cloud-config" jest OBOWIAZKOWA - po niej cloud-init rozpoznaje format pliku.
+
+# Zaktualizuj liste pakietow (odpowiednik "apt-get update") przed instalacja
+package_update: true
+package_upgrade: false
+
+# Pakiety do zainstalowania - cloud-init sam wykona "apt-get install"
+packages:
+  - nginx
+
+# Pliki do utworzenia na serwerze (tutaj: nasza strona startowa)
+write_files:
+  - path: /var/www/html/index.nginx-debian.html
+    permissions: '0644'
+    owner: root:root
+    content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <title>Lekcja 10 - cloud-init</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+          <h1>Strona wdrozona przez cloud-init!</h1>
+          <p>TERRAFORM + AWS + cloud-init (Sztokholm / eu-north-1)</p>
+          <p>AdminAkademia &copy; 2026</p>
+      </body>
+      </html>
+
+# Polecenia uruchamiane na koncu (po instalacji pakietow)
+runcmd:
+  - systemctl enable nginx
+  - systemctl restart nginx

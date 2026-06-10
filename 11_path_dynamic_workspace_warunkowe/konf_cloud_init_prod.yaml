@@ -1,0 +1,28 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+ 
+packages:
+  - nginx
+ 
+write_files:
+  - path: /var/www/html/index.nginx-debian.html
+    permissions: '0644'
+    owner: root:root
+    content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <title>Lekcja 11 - PRODUKCJA</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px; background:#ffecec;">
+          <h1>Srodowisko PRODUKCYJNE (workspace prod)</h1>
+          <p>TERRAFORM + AWS + cloud-init wybrany na podstawie terraform.workspace</p>
+          <p>AdminAkademia &copy; 2026</p>
+      </body>
+      </html>
+ 
+runcmd:
+  - systemctl enable nginx
+  - systemctl restart nginx
