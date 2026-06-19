@@ -1,0 +1,36 @@
+#cloud-config
+# Plik user_data wygenerowany przez templatefile() - srodowisko (workspace): ${environment}
+
+hostname: ${hostname}
+
+package_update: true
+package_upgrade: false
+
+packages:
+%{ for pkg in packages ~}
+  - ${pkg}
+%{ endfor ~}
+write_files:
+  - path: /var/www/html/index.nginx-debian.html
+    permissions: '0644'
+    owner: root:root
+    content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <title>Lekcja 12 - templatefile (${environment})</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;%{ if environment == "prod" } background:#ffecec;%{ endif }">
+          <h1>Serwer: ${hostname}</h1>
+          <p>Srodowisko: ${environment}</p>
+%{ if environment == "prod" ~}
+          <p><strong>UWAGA: to jest PRODUKCJA - zachowaj ostroznosc!</strong></p>
+%{ endif ~}
+          <p>AdminAkademia &copy; 2026</p>
+      </body>
+      </html>
+
+runcmd:
+  - systemctl enable nginx
+  - systemctl restart nginx
