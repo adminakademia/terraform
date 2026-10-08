@@ -1,0 +1,44 @@
+KARTA POMIAROWA - LEKCJA 20
+Zasada: kolumne PRZEWIDUJE wypelniam PRZED poleceniem, kolumne WYNIK - po nim.
+
+                                                         PRZEWIDUJE  |  WYNIK
+RUNDA 1 - MODUL (poniedzialek)   (stan z dwiema sieciami - po Kroku 5)
+  P1  Ile katalogow, w ktorych wykonujemy "init"?        1           |  1 ("platforma"); init 2 razy - nowe wywolanie modulu = nowy init
+  P2  Ile kluczy stanu "lekcja20" jest w kubelku?        1           |  1 - lekcja20/platforma/terraform.tfstate
+  P3  Ile naszych sieci VPC stoi w AWS?                  2           |  2 - 10.211.0.0/16 (lab20-vpc) i 10.212.0.0/16 (lab20-admin-vpc)
+  P4  Czy ten podzial widac w plikach projektu?          TAK         |  TAK - katalog "modules" i bloki "module" w main.tf
+  P5  Jak "przechodze" miedzy czesciami?                 nie trzeba  |  nie przechodze - moduly sa WYWOLYWANE z jednego miejsca
+  P6  Czy czesci ze soba rozmawiaja? Jak?                TAK-output  |  TAK - przez outputy (module.network.vpc_id), w jednym grafie
+  P7  Co zabierze "destroy" wydany w jednym miejscu?     wszystko    |  WSZYSTKO z tego root module - wszystkie wywolania naraz (plan -destroy: 11)
+  Wniosek: MODUL DZIELI KOD, A NIE STAN. Slad w stanie: tylko przedrostek adresu "module.<nazwa>.".
+           Jedna zmiana w przepisie (default w module) = zmiana we WSZYSTKICH uzyciach (plan: 2 to change).
+
+RUNDA 2 - WORKSPACE (wtorek)   (oryginal i kopia obok siebie - po Kroku 5)
+  P1  Ile katalogow, w ktorych wykonujemy "init"?        1           |  1 - ten sam katalog; "workspace new" nie wymaga nawet init
+  P2  Ile kluczy stanu "lekcja20" jest w kubelku?        2           |  2 - lekcja20/platforma/... oraz env:/kopia/lekcja20/platforma/...
+  P3  Ile naszych sieci VPC stoi w AWS?                  2           |  2 - BLIZNIAKI, obie 10.211.0.0/16 (lab20-vpc i lab20-kopia-vpc)
+  P4  Czy ten podzial widac w plikach projektu?          NIE         |  NIE - zero nowych plikow; slad tylko w kubelku i w .terraform\environment
+  P5  Jak "przechodze" miedzy czesciami?                 ws select   |  POLECENIEM "terraform workspace select" - bez zmiany katalogu
+  P6  Czy czesci ze soba rozmawiaja? Jak?                NIE         |  NIE - kopie nic o sobie nie wiedza; laczy je tylko wspolny kod
+  P7  Co zabierze "destroy" wydany w jednym miejscu?     biezaca     |  tylko biezaca kopie - ale KTORA jest biezaca, mowi tylko "workspace show"
+  Wniosek: WORKSPACE DZIELI STAN, A NIE KOD. Zmiana w .tf trafia do WSZYSTKICH kopii (plan w kazdej!).
+           Wybrany workspace przezywa zamkniecie okna. Przed apply/destroy: "terraform workspace show".
+
+RUNDA 3 - WARSTWY (sroda)   (obie warstwy dev wdrozone - pomiary z Kroku 7)
+  P1  Ile katalogow, w ktorych wykonujemy "init"?        2           |  2 - po jednym na warstwe (network i compute)
+  P2  Ile kluczy stanu "lekcja20" jest w kubelku?        2 nowe      |  2 nowe - lekcja20/dev/network/... i lekcja20/dev/compute/... (+ pusty platformy)
+  P3  Ile naszych sieci VPC stoi w AWS?                  1           |  1 - 10.221.0.0/16 (lab20-dev-vpc), z ktorej korzystaja obie warstwy
+  P4  Czy ten podzial widac w plikach projektu?          TAK         |  TAK - osobne katalogi i osobne bloki "backend"
+  P5  Jak "przechodze" miedzy czesciami?                 cd          |  "cd" do innego katalogu
+  P6  Czy czesci ze soba rozmawiaja? Jak?                w 1 strone  |  TAK, W JEDNA STRONE - compute czyta outputy network (remote_state)
+  P7  Co zabierze "destroy" wydany w jednym miejscu?     1 warstwe   |  tylko jedna warstwe (compute 5, network 6) - kolejnosc to NASZA sprawa
+  Wniosek: WARSTWA DZIELI SYSTEM NA CZESCI, KTORE ZE SOBA WSPOLPRACUJA. Kazda: wlasny stan i wlasciciel.
+           Graf konczy sie na granicy stanu: wdrazamy od fundamentu, niszczymy od dachu.
+
+RUNDA 4 - SRODOWISKA (czwartek)         (te same pytania P1-P7)   <- lekcja 20.2
+FINAL - WSZYSTKIE CZTERY (piatek)       (te same pytania P1-P7)   <- lekcja 20.2
+
+Trzy obrazy po lekcji 20.1:
+  runda 1 (modul):      1 klucz stanu, 2 sieci            -> jeden zeszyt, dwa uzycia przepisu
+  runda 2 (workspace):  2 klucze stanu, 2 sieci-BLIZNIAKI -> drugi zeszyt, kopia calosci
+  runda 3 (warstwy):    2 klucze stanu, 1 siec            -> dwa zeszyty, jedna platforma pocieta na czesci
