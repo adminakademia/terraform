@@ -1,14 +1,14 @@
 #!/bin/bash
 # ==========================================================================================
-# przygotuj_debian.sh - nadrobienie przygotowania maszyny Debian do kursu Terraform/OpenTofu
+# przygotuj_debian.sh - maszyna Debian jako serwer Dockera (kurs Terraform/OpenTofu, lekcja 21)
 #
-# Odtwarza na swiezo zaimportowanym Debianie 13 (plik OVA z materialow kursu, uzytkownik "kursant")
-# to, co robilismy na Debianie w kursie:
-#   lekcje 1 i 3 : pakiety sudo, curl, mc, gnupg, unzip; Terraform (repozytorium HashiCorp);
-#                  AWS CLI v2; katalog ~/terraform; klucz SSH z Windows w ~/.ssh/authorized_keys
-#   lekcja 10    : Ansible i katalog /ansible/inwentarz (stacja sterujaca)
-#   lekcja 21    : Docker Engine z oficjalnego repozytorium Dockera (wedlug dokumentacji
-#                  docs.docker.com, jak w kursie Ansible) i uzytkownik w grupie "docker"
+# Na swiezo zaimportowanym Debianie 13 (plik OVA z materialow kursu, uzytkownik "kursant"):
+#   1) aktualizuje system i instaluje pakiety potrzebne do dodania repozytorium Dockera,
+#   2) instaluje Docker Engine z oficjalnego repozytorium Dockera (wedlug dokumentacji
+#      docs.docker.com) i dodaje uzytkownika do grupy "docker",
+#   3) dopisuje klucz SSH z Windows do ~/.ssh/authorized_keys (jak w lekcji 1).
+# Terraformu, AWS CLI ani Ansible tu nie instalujemy: Terraform i OpenTofu pracuja na Windows,
+# a Debian jest tylko serwerem Dockera, z ktorym provider laczy sie przez SSH.
 # Skrypt mozna uruchamiac wielokrotnie - to, co juz jest zainstalowane, zostaje pominiete.
 #
 # Uzycie (jako root):   bash przygotuj_debian.sh <uzytkownik> [plik_z_kluczem_publicznym]
@@ -40,41 +40,16 @@ if [ -n "$KLUCZ" ] && [ ! -f "$KLUCZ" ] && [ -f "$DOM/$KLUCZ" ]; then KLUCZ="$DO
 . /etc/os-release
 [ "${ID:-}" = "debian" ] || echo "UWAGA: skrypt przygotowano dla Debiana 13, wykryto: ${PRETTY_NAME:-nieznany system}"
 
-krok "1/6 Aktualizacja systemu i pakiety podstawowe (lekcje 1 i 3)"
+krok "1/3 Aktualizacja systemu i pakiety potrzebne do repozytorium Dockera"
 # Dawne maszyny mialy czasem aktywne zrodlo "deb cdrom:", ktore przerywa apt-get update
 sed -i '/^deb cdrom:/s/^/#/' /etc/apt/sources.list 2>/dev/null || true
 apt-get update -qq
 echo "(aktualizacja systemu moze potrwac kilka minut)"
 apt-get upgrade -y -qq -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold >/dev/null
-apt-get install -y -qq sudo curl mc gnupg unzip ca-certificates openssh-server >/dev/null
-systemctl enable --now ssh >/dev/null 2>&1 || true
-echo "Pakiety podstawowe: OK"
+apt-get install -y -qq ca-certificates curl >/dev/null
+echo "Pakiety ca-certificates i curl: OK"
 
-krok "2/6 Terraform z repozytorium HashiCorp (lekcja 3)"
-if ! command -v terraform >/dev/null 2>&1; then
-  curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor --yes -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com ${VERSION_CODENAME} main" > /etc/apt/sources.list.d/hashicorp.list
-  apt-get update -qq
-  apt-get install -y -qq terraform >/dev/null
-fi
-terraform version | sed -n 1p
-
-krok "3/6 AWS CLI v2 (lekcja 3)"
-if ! command -v aws >/dev/null 2>&1; then
-  tmp=$(mktemp -d)
-  curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "$tmp/awscliv2.zip"
-  unzip -q "$tmp/awscliv2.zip" -d "$tmp"
-  "$tmp/aws/install" >/dev/null
-  rm -rf "$tmp"
-fi
-aws --version
-
-krok "4/6 Ansible i katalog /ansible/inwentarz (lekcja 10)"
-apt-get install -y -qq ansible >/dev/null
-mkdir -p /ansible/inwentarz
-ansible --version | sed -n 1p
-
-krok "5/6 Docker Engine z oficjalnego repozytorium Dockera i grupa docker (lekcja 21)"
+krok "2/3 Docker Engine z oficjalnego repozytorium Dockera i grupa docker"
 if ! command -v docker >/dev/null 2>&1; then
   # Metoda zalecana w dokumentacji: https://docs.docker.com/engine/install/debian/
   install -m 0755 -d /etc/apt/keyrings
@@ -89,12 +64,11 @@ fi
 systemctl enable --now docker >/dev/null 2>&1 || true
 usermod -aG docker "$UZYTKOWNIK"
 docker version --format 'Docker Engine {{.Server.Version}} ({{.Server.Os}})'
-# Pobrania obrazow nie moga przerwac skryptu (np. limit Docker Hub) - klucz SSH w etapie 6 jest wazniejszy
+# Pobrania obrazow nie moga przerwac skryptu (np. limit Docker Hub) - klucz SSH w etapie 3 jest wazniejszy
 docker run --rm hello-world | grep 'Hello from Docker' || echo "UWAGA: test hello-world nieudany (limit Docker Hub?) - powtorz pozniej: docker run --rm hello-world"
 docker pull -q nginx:1.30-alpine || echo "UWAGA: nie pobrano nginx:1.30-alpine - Terraform pobierze obraz w trakcie lekcji"
 
-krok "6/6 Katalog ~/terraform i klucz SSH z Windows (lekcja 1)"
-install -d -m 755 -o "$UZYTKOWNIK" -g "$GRUPA" "$DOM/terraform"
+krok "3/3 Klucz SSH z Windows w ~/.ssh/authorized_keys (lekcja 1)"
 install -d -m 700 -o "$UZYTKOWNIK" -g "$GRUPA" "$DOM/.ssh"
 if [ -n "$KLUCZ" ]; then
   k=$(tr -d '\r' < "$KLUCZ" | sed -n 1p)
